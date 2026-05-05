@@ -1,20 +1,51 @@
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import TaskForm from "./components/TaskForm";
+import TaskList from "./components/TaskList";
 
 function App() {
+  const [tasks, setTasks] = useState([]);
+
+  // Cargar tareas desde el backend
+  useEffect(() => {
+    fetch("http://localhost:3000/api/tasks")
+      .then((res) => res.json())
+      .then((data) => setTasks(data));
+  }, []);
+
+  // Agregar tarea
+  const addTask = async (task) => {
+    const res = await fetch("http://localhost:3000/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(task),
+    });
+    const newTask = await res.json();
+    setTasks([...tasks, newTask]);
+  };
+
+  // Eliminar tarea
+  const deleteTask = async (id) => {
+    await fetch(`http://localhost:3000/api/tasks/${id}`, { method: "DELETE" });
+    setTasks(tasks.filter((t) => t.id !== id));
+  };
+
+  // Marcar tarea como completada / desmarcar
+  const toggleTask = async (id, completed) => {
+    const res = await fetch(`http://localhost:3000/api/tasks/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !completed }),
+    });
+    const updatedTask = await res.json();
+    setTasks(tasks.map((t) => (t.id === id ? updatedTask : t)));
+  };
+ 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6">
-      <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-blue-600 mb-4 text-center">
-          Aplicacion de Tareas
-        </h1>
-        <p className="text-gray-700 mb-6 text-center">
-          Bienvenido a tu aplicación de tareas con React + Tailwind.
-        </p>
-        <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full">
-          Empezar
-        </button>
-      </div>
+    
+    <div className="bg-blue-200 rounded-lg shadow-lg mt-40 max-w-xl mx-auto p-4 space-y-4">
+      <h1 className="text-2xl font-bold text text-center text-gray-700">Lista de Tareas</h1>
+      <TaskForm addTask={addTask} />
+      <TaskList tasks={tasks} deleteTask={deleteTask} toggleTask={toggleTask} />
     </div>
   );
 }
